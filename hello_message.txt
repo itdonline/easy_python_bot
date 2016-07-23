@@ -1,0 +1,5 @@
+Hello!
+This bot works just like Python interpreter. Have fun!
+
+For a start try to send me:
+print 'Hello, world!'
