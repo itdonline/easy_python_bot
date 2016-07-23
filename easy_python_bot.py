@@ -1,21 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Simple Bot to reply to Telegram messages
-# This program is dedicated to the public domain under the CC0 license.
-"""
-This Bot uses the Updater class to handle the bot.
-First, a few handler functions are defined. Then, those functions are passed to
-the Dispatcher and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-Usage:
-Basic Echobot example, repeats messages.
-Press Ctrl-C on the command line or send a signal to the process to stop the
-bot.
-"""
+# Telegram bot that works like Python interpreter
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import logging
+
+from subprocess import Popen, PIPE
+
+import time
+
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -23,9 +17,8 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
+chat_proc_dict = {}
 
-# Define a few command handlers. These usually take the two arguments bot and
-# update. Error handlers also receive the raised TelegramError object in error.
 def start(bot, update):
     with open('hello_message.txt', 'r') as hello_message_file:
         bot.sendMessage(update.message.chat_id, text=hello_message_file.read())
@@ -38,6 +31,28 @@ def help(bot, update):
 def echo(bot, update):
     logger.info('User %s sent message: %s' % (update.message.from_user, update.message.text))
     bot.sendMessage(update.message.chat_id, text=update.message.text)
+
+
+def text_message_handler(bot, update):
+    print chat_proc_dict
+
+    chat_id = update.message.chat_id
+    message = update.message.text
+
+    logger.info('User %s (%s) sent message: %s' % (update.message.from_user, chat_id, message))
+
+    if chat_id not in chat_proc_dict:
+        proc = Popen('python -i',
+                     shell=True,
+                     stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+        chat_proc_dict[chat_id] = {'proc': proc,
+                                   'bot': bot,
+                                   'timestamp': time.time()}
+
+    chat_proc_dict[chat_id]['proc'].stdin.write(message + '\n')
+
+    # bot.sendMessage(chat_id, text=chat_proc_dict[chat_id]['proc'].stdout.readline())
 
 
 def error(bot, update, error):
@@ -61,7 +76,7 @@ def main():
     dp.add_handler(CommandHandler("help", help))
 
     # on noncommand i.e message - echo the message on Telegram
-    dp.add_handler(MessageHandler([Filters.text], echo))
+    dp.add_handler(MessageHandler([Filters.text], text_message_handler))
 
     # log all errors
     dp.add_error_handler(error)
