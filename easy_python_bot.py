@@ -3,6 +3,8 @@
 #
 # Telegram bot that works like Python interpreter
 
+from easy_python_bot_threads import read_stdout_thread
+
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import logging
 
@@ -50,7 +52,10 @@ def text_message_handler(bot, update):
                                    'bot': bot,
                                    'timestamp': time.time()}
 
-    chat_proc_dict[chat_id]['proc'].stdin.write(message + '\n')
+    # for char in message:
+    #     print ord(char)
+
+    chat_proc_dict[chat_id]['proc'].stdin.write(message + '\n\n')
 
     # bot.sendMessage(chat_id, text=chat_proc_dict[chat_id]['proc'].stdout.readline())
 
@@ -91,4 +96,6 @@ def main():
 
 
 if __name__ == '__main__':
+    read_stdout_thread(chat_proc_dict).start()
+
     main()
